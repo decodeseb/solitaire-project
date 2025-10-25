@@ -2,11 +2,21 @@
     border: 1px solid red;
 }
 
-.stock, .waste, .foundations {
+.stock, .waste {
     float:left;
 }
-.tableau {
-    clear:both;
+
+.foundations, .foundations>div {
+    float:right;
+}
+
+.foundations>div {
+    margin-left:0.5rem;
+}
+
+.tableau>div {
+    float:left;
+    padding-top:2rem;
 }
 
 .clearfix:after { 
@@ -20,3 +30,37 @@
 img{
     width: 6rem;
 }
+
+/* Stacking behavior */
+
+.tableau {
+    display:flex;
+    gap:2rem;
+    align-items:flex-start;
+    clear:both;
+    padding-top:5rem;
+    height:fit-content;
+}
+
+.tableau .pile {
+    position:relative;
+    width:7rem;
+    height:15rem;
+}
+
+.tableau .pile > *{
+    display:block;
+    position: absolute;
+    top:0;
+    left:0;
+    width:6rem;
+  
+}
+
+.tableau .pile > :nth-child(1) { top: 0; }
+.tableau .pile > :nth-child(2) { top: 1.5rem; }
+.tableau .pile > :nth-child(3) { top: 3rem; }
+.tableau .pile > :nth-child(4) { top: 4.5rem; }
+.tableau .pile > :nth-child(5) { top: 7rem; }
+.tableau .pile > :nth-child(6) { top: 9.5rem; }
+.tableau .pile > :nth-child(7) { top: 12rem; }
