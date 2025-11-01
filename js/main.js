@@ -8,32 +8,40 @@ if(!localStorage.getItem("deck_id")){
       .then(data => {
         console.log(data)
           deck_id = data.deck_id;
+
           localStorage.setItem("deck_id", deck_id);
 
-        console.log(deck_id, localStorage.getItem("deck_id"));
-      })
+        //draw a card if a deck doesnt exist
 
+          fetch(`https://www.deckofcardsapi.com/api/deck/${deck_id}/draw/?count=1`)
+              .then(res => res.json()) //parse response as JSON
+              .then(data => {
+                console.log(data, data.cards[0]["image"]);
+              })
+
+              .catch(err => {
+                        console.log(`error ${err}`)
+                    })
+
+          console.log(deck_id, localStorage.getItem("deck_id"));
+        })
       .catch(err => {
                 console.log(`error ${err}`)
             });
 
 } else {
+    deck_id = localStorage.getItem("deck_id");
+    //draw a card
+    fetch(`https://www.deckofcardsapi.com/api/deck/${deck_id}/draw/?count=1`)
+          .then(res => res.json()) //parse response as JSON
+          .then(data => {
+            console.log(data, data.cards[0]["image"]);
+          })
 
-     deck_id = localStorage.getItem("deck_id");
+          .catch(err => {
+                    console.log(`error ${err}`)
+                })
 
 }
 
-console.log(deck_id, localStorage.getItem("deck_id"))
-// Draw a card
-
-
-fetch(`https://www.deckofcardsapi.com/api/deck/${deck_id}/draw/?count=1`)
-      .then(res => res.json()) //parse response as JSON
-      .then(data => {
-        console.log(data, data.cards[0]["image"]);
-      })
-
-      .catch(err => {
-                console.log(`error ${err}`)
-            });
 
