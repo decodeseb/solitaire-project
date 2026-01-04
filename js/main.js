@@ -1,65 +1,22 @@
+//implemented a MVC model naturally (Model (state, data structures), view(visuals through the DOM), controller (player input validated through event-listeners))
+
 let deck_id="";
-let stock = document.querySelector("div.stock img");
+const stockPile = [];
+const wastePile = [];
 
-if(!localStorage.getItem("deck_id")){
-
-  fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
-      .then(res => res.json()) //parse response as JSON
-      .then(data => {
-        console.log(data)
-        deck_id = data.deck_id;
-
-        localStorage.setItem("deck_id", deck_id);
-
-        //draw a card if a deck doesnt exist
-
-        fetch(`https://www.deckofcardsapi.com/api/deck/${deck_id}/draw/?count=1`)
-              .then(res => res.json()) //parse response as JSON
-              .then(data => { 
-                console.log(data, data.cards[0]["image"]);
-              })
-
-              .catch(err => {
-                        console.log(`error ${err}`)
-                    })
-
-          console.log(deck_id, localStorage.getItem("deck_id"));
-        })
-      .catch(err => {
-                console.log(`error ${err}`)
-            });
-
-} else { //if the deck already exists.
-    deck_id = localStorage.getItem("deck_id");
-    //draw a card
-    fetch(`https://www.deckofcardsapi.com/api/deck/${deck_id}/draw/?count=1`)
-          .then(res => res.json()) //parse response as JSON
-          .then(data => {
-            console.log(data, data.cards[0]["image"]);
-            stock.src = data.cards[0]['image'];
-          })
-
-          .catch(err => {
-                    console.log(`error ${err}`)
-                })
-
-}
-
-//tableau
-
-// data structure representing the tableau, array of subarrays.
-let tableau = [
-  [],  //pile 1
+const tableau = [
+  [],  //7 piles
   [],
   [],
   [],
   [],
   [],
-  []  //pile 7
+  []  
 ]; 
 
 class Card {
-  constructor(rank, suit, faceUp = false, image = null){
+  constructor(code, rank, suit, faceUp = false, image = null){
+    this.id = code; // card id for the DOM
     this.rank = rank; // 2-10, A, K, Q
     this.suit = suit; // spades, 'hearts'...
     this.faceUp = faceUp; // false by default
@@ -72,20 +29,114 @@ class Card {
   }
 }
 
-//dealing cards to tableau
-for(let i=0; i<tableau.length; i++){
-  for(let j=0; j < i+1; j++){
-    tableau[i].push(new Card("Test", 'Test', false, "test.png"));
-  }
+
+if(!localStorage.getItem("deck_id")){
+
+  fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
+      .then(res => res.json()) //parse response as JSON
+      .then(data => {
+        console.log(data)
+        deck_id = data.deck_id;
+        localStorage.setItem("deck_id", deck_id);
+
+        //draw a card if a deck doesnt exist
+
+        initialSetUp(deck_id);
+        saveGame();
+      })
+
+      .catch(err => {
+                console.log(`error ${err}`)
+            });
+
+} else { //if the deck already exists
+    //resume the game
+    deck_id = localStorage.getItem("deck_id");
+    loadGame();
 }
 
-//flip top-card
-for(let i=0; i<tableau.length; i++){
-  /* tableau[i][tableau[i].length-1]["faceUp"] = true; */ //not very readable
-  const pile = tableau[i];
-  const lastCard = pile[pile.length-1];
-  lastCard.faceUp = true;
+//initial dealing of cards to tableau and stockpile
+
+function initialSetUp(deck_id) {
+  //draw a card
+  fetch(`https://www.deckofcardsapi.com/api/deck/${deck_id}/draw/?count=52`)
+        .then(res => res.json()) //parse response as JSON
+        .then(data => {
+          const cardsFromApi = data.cards; // object of 52 cards drawn
+          let cardIndex = 0; //Create a seperate index to track the cards of the array because the indexes of the nested loop are not linear!
+          
+          //1. Fill the tableau with 28 cards, 7 piles
+          for(let i=0; i<tableau.length; i++){
+            for(let j=0; j < i+1; j++){
+
+              const apiCard = cardsFromApi[cardIndex++]; // *cardIndex is used becasue we are trying to keep the linear indexing of the api array separate from the non-linear indexing of the tableau.
+              //we pull the cards in a linear pattern while the i and j indexes deal the cards in a non-linear pattern.
+              tableau[i].push( 
+                new Card(
+                apiCard.code, 
+                apiCard.value, 
+                apiCard.suit, 
+                false, 
+                apiCard.image ));
+            };
+            //2. Turn last card face up
+            tableau[i][tableau[i].length -1].flip();
+          };
+
+          
+          //3. Fill the stock pile
+          for(; cardIndex < cardsFromApi.length; cardIndex++){ // remaining cards from deck;
+            const apiCard = cardsFromApi[cardIndex];
+            stockPile.push(
+              new Card(
+                apiCard.code, 
+                apiCard.value, 
+                apiCard.suit, 
+                false, 
+                apiCard.image)
+            );
+          };
+
+        })     
+
+        .catch(err => {
+                  console.log(`error ${err}`)
+              })
+
+console.log(tableau, stockPile);
 }
 
 
-console.log(tableau);
+// Function that savec game state
+
+function saveGame(){
+  //want to save tableau, stockpile, wastepile.
+
+  //using JSON to stringify (serialize the model part of MVC (arrays, objects))
+  //serialize= flatten the data into text
+  //THIS DOES NOT SAVE THE METHODS!
+
+  localStorage.setItem('stockPile', JSON.stringify(stockPile)); //arr of objects
+  localStorage.setItem('tableau', JSON.stringify(tableau)); //arr of arrays of objects
+  localStorage.setItem('wastePile', JSON.stringify(wastePile)); // arr of objects
+}
+
+function loadGame(){
+  const rawStockPile = JSON.parse(localStorage.getItem('stockPile')); //creates an array of objects with no methods
+  const rawTableau = JSON.parse(localStorage.getItem('tableau'));
+  const rawWastePile = JSON.parse(localStorage.getItem('wastePile'));
+
+  stockPile = rawStockPile.map(card => {
+    return new Card(
+      card.id,
+      card.rank,
+      card.suit,
+      card.faceUp,
+      card.image,
+    )
+  } );
+  
+  wastePile = rawWastePile.map(card => new Card(card.id, card.rank, card.suit, card.faceUp, card.image));
+
+  tableau = rawTableau.map(pile => pile.map(card => new Card(card.id, card.rank, card.suit, card.faceUp, card.image)));
+}
