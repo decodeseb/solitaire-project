@@ -1,10 +1,10 @@
 //implemented a MVC model naturally (Model (state, data structures), view(visuals through the DOM), controller (player input validated through event-listeners))
 
 let deck_id="";
-const stockPile = [];
-const wastePile = [];
+let stockPile = [];
+let wastePile = [];
 
-const tableau = [
+let tableau = [
   [],  //7 piles
   [],
   [],
@@ -122,9 +122,15 @@ function saveGame(){
 }
 
 function loadGame(){
-  const rawStockPile = JSON.parse(localStorage.getItem('stockPile')); //creates an array of objects with no methods
-  const rawTableau = JSON.parse(localStorage.getItem('tableau'));
-  const rawWastePile = JSON.parse(localStorage.getItem('wastePile'));
+  const rawStockPile = JSON.parse(localStorage.getItem('stockPile')) || []; //creates an array of objects with no methods
+  const rawTableau = JSON.parse(localStorage.getItem('tableau')) || [];
+  const rawWastePile = JSON.parse(localStorage.getItem('wastePile')) || []; // Give me the stored data or give me an empty array
+
+  /* Why an empty array? to make sure that rawWastePile.map(...) still works. it treat 'empty' array as a valid state 
+because it is logical that for example, the waste pile might be empty when you want to load the game. It also avoids conditinal
+clutter and keeps the logic resilient. When you map an empty array, you get an empty array*/
+
+// Anytime you load persisted data, ask yourseld: what is the default valid state if this data does NOT exist? In this case its an empty arr.
 
   stockPile = rawStockPile.map(card => {
     return new Card(
@@ -139,4 +145,43 @@ function loadGame(){
   wastePile = rawWastePile.map(card => new Card(card.id, card.rank, card.suit, card.faceUp, card.image));
 
   tableau = rawTableau.map(pile => pile.map(card => new Card(card.id, card.rank, card.suit, card.faceUp, card.image)));
+}
+
+// draw() = stockpile - wastepile drawing behavior
+// returns an object (changesObj) that describes the changes that took place. (1 card drawn, or all wastepile card recycled)
+
+function draw() {
+
+  if(stockPile) { // has cards
+    let drawnCard = stockPile.pop();
+    drawnCard.flip();
+    wastePile.push(drawnCard);
+    saveGame();
+    
+    const changesObj = {
+      action: "draw",
+      cards: [drawnCard],
+      from: 'stockPile',
+      to: 'wastePile',
+    }
+
+    return changesObj;
+
+  } else if (!stockPile && wastePile){
+    let recycled = wastePile.splice(0).map(elem => elem.flip());
+    saveGame();
+
+    const changesObj = {
+      action: 'recycle',
+      cards: [...recycled],
+      from: 'wastePile',
+      to:'stockPile',
+    }
+
+    return changesObj;
+
+  } else {
+    return null;
+  }  
+
 }
