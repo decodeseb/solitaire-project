@@ -152,7 +152,7 @@ clutter and keeps the logic resilient. When you map an empty array, you get an e
 
 function draw() {
 
-  if(stockPile) { // has cards
+  if(stockPile.length > 0) { // has cards
     let drawnCard = stockPile.pop();
     drawnCard.flip();
     wastePile.push(drawnCard);
@@ -167,13 +167,16 @@ function draw() {
 
     return changesObj;
 
-  } else if (!stockPile && wastePile){
-    let recycled = wastePile.splice(0).map(elem => elem.flip());
+  } else if (stockPile.length === 0 && wastePile.length !== 0){
+    wastePile.forEach(card => card.flip());
+    stockPile = wastePile.reverse();
+    wastePile = [];
+
     saveGame();
 
     const changesObj = {
       action: 'recycle',
-      cards: [...recycled],
+      cards: [...stockPile],
       from: 'wastePile',
       to:'stockPile',
     }
