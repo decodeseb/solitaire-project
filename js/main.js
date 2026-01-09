@@ -175,7 +175,7 @@ function draw() {
     saveGame();
 
     const changesObj = {
-      action: 'recycle',
+      action: 'recycle', 
       cards: [...stockPile],
       from: 'wastePile',
       to:'stockPile',
@@ -189,4 +189,26 @@ function draw() {
 
 }
 
-test
+document.querySelector('.stock').addEventListener('click', () => {
+  let responseObj = draw();
+  applyChanges(responseObj);
+});
+
+function applyChanges(moveResult) { //only translates the info from changesObj (model) into DOM movement(view)
+  switch(moveResult.action){
+    case 'draw':
+      let cardIdToMove = moveResult.cards[0].id; //takes id of card that moved in the model
+      const domCard = document.querySelector(`[data-card-id="${cardIdToMove}"]`); //selects that card in the dom
+      document.querySelector('.waste').appendChild(domCard); //places it in waste
+      break;
+    case 'recycle':
+      let cardsArrToMove = moveResult.cards.map(elem=> elem.id);
+      for(let i =0; i < cardsArrToMove.length; i++){ //loops through the arr of ids
+        const domCard = document.querySelector(`[data-card-id="${cardsArrToMove[i]}"]`); //selects 1 card per iteration
+        document.querySelector('.stock').appendChild(domCard);
+      };
+      break;
+    default:
+      break;
+  }
+}
