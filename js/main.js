@@ -161,6 +161,7 @@ function draw() {
     const changesObj = {
       action: "draw",
       cards: [drawnCard],
+      faceUp: true,
       from: 'stockPile',
       to: 'wastePile',
     }
@@ -177,6 +178,7 @@ function draw() {
     const changesObj = {
       action: 'recycle', 
       cards: [...stockPile],
+      faceUp: false,
       from: 'wastePile',
       to:'stockPile',
     }
@@ -191,23 +193,34 @@ function draw() {
 
 document.querySelector('.stock').addEventListener('click', () => {
   let responseObj = draw();
-  applyChanges(responseObj);
+  if(responseOnj !== null){
+    applyChanges(responseObj);
+  };
 });
 
 function applyChanges(moveResult) { //only translates the info from changesObj (model) into DOM movement(view)
-  switch(moveResult.action){
+  
+    switch(moveResult.action){
     case 'draw':
       let cardIdToMove = moveResult.cards[0].id; //takes id of card that moved in the model
       const domCard = document.querySelector(`[data-card-id="${cardIdToMove}"]`); //selects that card in the dom
       document.querySelector('.waste').appendChild(domCard); //places it in waste
+
+      //visually speaking in the dom, we see:
+      if(moveResult.faceUp === true){
+        domCard.src = moveResult.cards[0].image;
+      }
       break;
+
     case 'recycle':
-      let cardsArrToMove = moveResult.cards.map(elem=> elem.id);
-      for(let i =0; i < cardsArrToMove.length; i++){ //loops through the arr of ids
-        const domCard = document.querySelector(`[data-card-id="${cardsArrToMove[i]}"]`); //selects 1 card per iteration
-        document.querySelector('.stock').appendChild(domCard);
+      let arrOfCardsToMove = moveResult.cards.map(elem=> elem.id);
+      for(let i = arrOfCardsToMove.length-1; i>=0; i--){ //loops through the arr of ids
+        const domCard = document.querySelector(`[data-card-id="${arrOfCardsToMove[i]}"]`); //selects 1 card per iteration
+        document.querySelector('.stock').appendChild(domCard) // places in stock
+        domCard.src = "https://www.deckofcardsapi.com/static/img/back.png"; //picture of the back of the card
       };
       break;
+      
     default:
       break;
   }
